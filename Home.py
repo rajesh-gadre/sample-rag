@@ -1,5 +1,8 @@
 import streamlit as st
 
+from utils import show_navigation
+show_navigation()
+
 def add_bg_from_url():
     st.markdown(
          f"""
@@ -15,7 +18,8 @@ def add_bg_from_url():
          unsafe_allow_html=True
      )
 
-add_bg_from_url() 
+# add_bg_from_url() 
+
   
 st.markdown("# HELLO WORLD")
 

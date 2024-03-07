@@ -21,6 +21,9 @@ import streamlit as st
 import os
 from pinecone import Pinecone, ServerlessSpec, PodSpec
 
+from utils import show_navigation
+show_navigation()
+
 PINECONE_API_KEY=os.environ['PINECONE_API_KEY']
 PINECONE_API_ENV=os.environ['PINECONE_API_ENV']
 PINECONE_INDEX_NAME=os.environ['PINECONE_INDEX_NAME']

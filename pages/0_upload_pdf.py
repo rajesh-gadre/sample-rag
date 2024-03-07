@@ -19,6 +19,8 @@ import numpy as np
 import streamlit as st
 from streamlit.hello.utils import show_code
 
+from utils import show_navigation
+show_navigation()
 
 
 import os

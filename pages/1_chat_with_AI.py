@@ -2,6 +2,9 @@ from openai import OpenAI
 import os
 import streamlit as st
 
+from utils import show_navigation
+show_navigation()
+
 avatars={"system":"💻🧠","user":"🧑‍💼","assistant":"🎓"}
 client=OpenAI(api_key=os.environ['OPENAI_API_KEY'])
 
