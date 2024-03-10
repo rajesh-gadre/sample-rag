@@ -24,11 +24,11 @@ from pinecone import Pinecone, ServerlessSpec, PodSpec
 from utils import show_navigation
 show_navigation()
 
-PINECONE_API_KEY=os.environ['PINECONE_API_KEY']
-PINECONE_API_ENV=os.environ['PINECONE_API_ENV']
-PINECONE_INDEX_NAME=os.environ['PINECONE_INDEX_NAME']
+PINECONE_API_KEY=st.secrets['PINECONE_API_KEY']
+PINECONE_API_ENV=st.secrets['PINECONE_API_ENV']
+PINECONE_INDEX_NAME=st.secrets['PINECONE_INDEX_NAME']
 
-client=OpenAI(api_key=os.environ['OPENAI_API_KEY'])
+client=OpenAI(api_key=st.secrets['OPENAI_API_KEY'])
 
 def augmented_content(inp):
     # Create the embedding using OpenAI keys
