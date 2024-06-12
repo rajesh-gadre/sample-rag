@@ -26,12 +26,13 @@ with st.sidebar:
 
     st.subheader('Models and parameters')
     selected_model = "Llama3-70B"
+    selected_model = 'Llama2-13B'
     # selected_modelx = st.sidebar.selectbox('Choose a Llama2 model', ('Llama2-7B', 'Llama2-13B','Llama3-70B'))
     st.sidebar.write(f"Model:{selected_model}")
     if selected_model == 'Llama2-7B':
         llm = 'a16z-infra/llama7b-v2-chat:4f0a4744c7295c024a1de15e1a63c880d3da035fa1f49bfd344fe076074c8eea'
     elif selected_model == 'Llama2-13B':
-        llm = 'a16z-infra/llama13b-v2-chat:df7690f1994d94e96ad9d568eac121aecf50684a0b0963b25a41cc40061269e5'
+        llm = "meta/llama-2-13b-chat"
     elif selected_model == "Llama3-70B":
         llm = 'meta/meta-llama-3-70b-instruct'
     temperature = st.sidebar.slider('temperature', min_value=0.01, max_value=5.0, value=0.1, step=0.01)
