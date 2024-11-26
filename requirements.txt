@@ -12,3 +12,6 @@ markdown
 markdown
 mistune
 replicate
+
+langchain_community
+langchain_core

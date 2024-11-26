@@ -34,7 +34,7 @@ if prompt := st.chat_input("What is up?"):
             messages=[{"role": m["role"], "content": m["content"]}
                       for m in st.session_state.messages], stream=True):
             delta_response=response.choices[0].delta
-            print(f"Delta response: {delta_response}")
+            #print(f"Basic CHat Delta response: {delta_response}")
             if delta_response.content:
                 full_response += delta_response.content
             message_placeholder.markdown(full_response + "▌")
