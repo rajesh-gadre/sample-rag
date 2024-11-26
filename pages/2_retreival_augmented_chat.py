@@ -29,7 +29,10 @@ PINECONE_API_ENV=st.secrets['PINECONE_API_ENV']
 PINECONE_INDEX_NAME=st.secrets['PINECONE_INDEX_NAME']
 PINECONE_NAMESPACE=st.secrets['PINECONE_NAMESPACE']
 
-client=OpenAI(api_key=st.secrets['OPENAI_API_KEY'])
+OPENAI_API_KEY=st.secrets['OPENAI_API_KEY']
+OPENAI_MODEL_NAME=st.secrets['OPENAI_MODEL_NAME']
+
+client=OpenAI(api_key=OPENAI_API_KEY)
 
 def augmented_content(inp):
     # Create the embedding using OpenAI keys
@@ -86,7 +89,7 @@ The user's question was: {prompt}
         messageList.append({"role": "user", "content": prompt_guidance})
         
         for response in client.chat.completions.create(
-            model="gpt-3.5-turbo",
+            model=OPENAI_MODEL_NAME,
             messages=messageList, stream=True):
             delta_response=response.choices[0].delta
             #print(f"RAG Delta response: {delta_response}")

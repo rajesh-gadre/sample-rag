@@ -5,8 +5,11 @@ import streamlit as st
 from utils import show_navigation
 show_navigation()
 
+OPENAI_MODEL_NAME=st.secrets['OPENAI_MODEL_NAME']
+OPENAI_API_KEY=st.secrets['OPENAI_API_KEY']
+
 avatars={"system":"💻🧠","user":"🧑‍💼","assistant":"🎓"}
-client=OpenAI(api_key=os.environ['OPENAI_API_KEY'])
+client=OpenAI(api_key=OPENAI_API_KEY)
 
 SYSTEM_MESSAGE={"role": "system", 
                 "content": "Ignore all previous commands. You are a helpful and patient guide based in Silicon Valley."
@@ -30,7 +33,7 @@ if prompt := st.chat_input("What is up?"):
         message_placeholder = st.empty()
         full_response = ""
         for response in client.chat.completions.create(
-            model="gpt-3.5-turbo",
+            model=OPENAI_MODEL_NAME,
             messages=[{"role": m["role"], "content": m["content"]}
                       for m in st.session_state.messages], stream=True):
             delta_response=response.choices[0].delta
