@@ -24,13 +24,15 @@ from pinecone import Pinecone, ServerlessSpec, PodSpec
 from utils import show_navigation
 show_navigation()
 
+print(f"Secrets: {st.secrets}")
+
 PINECONE_API_KEY=st.secrets['PINECONE_API_KEY']
-PINECONE_API_ENV=st.secrets['PINECONE_API_ENV']
+#PINECONE_API_ENV=st.secrets['PINECONE_API_ENV']
 PINECONE_INDEX_NAME=st.secrets['PINECONE_INDEX_NAME']
 PINECONE_NAMESPACE=st.secrets['PINECONE_NAMESPACE']
 
 OPENAI_API_KEY=st.secrets['OPENAI_API_KEY']
-OPENAI_MODEL_NAME=st.secrets['OPENAI_MODEL_NAME']
+#OPENAI_MODEL_NAME=st.secrets['OPENAI_MODEL_NAME']
 
 client=OpenAI(api_key=OPENAI_API_KEY)
 
@@ -89,7 +91,7 @@ The user's question was: {prompt}
         messageList.append({"role": "user", "content": prompt_guidance})
         
         for response in client.chat.completions.create(
-            model=OPENAI_MODEL_NAME,
+            model="gpt-4o-mini",
             messages=messageList, stream=True):
             delta_response=response.choices[0].delta
             #print(f"RAG Delta response: {delta_response}")
