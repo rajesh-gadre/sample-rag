@@ -21,13 +21,16 @@ import streamlit as st
 import os
 from pinecone import Pinecone, ServerlessSpec, PodSpec
 
+from langchain_core.messages import SystemMessage, HumanMessage
+from langchain_openai import ChatOpenAI
+from pydantic import BaseModel
+
 from utils import show_navigation
 show_navigation()
 
 st.sidebar.write(f"Secrets: {st.secrets}")
 
 PINECONE_API_KEY=st.secrets['PINECONE_API_KEY']
-#PINECONE_API_ENV=st.secrets['PINECONE_API_ENV']
 PINECONE_INDEX_NAME=st.secrets['PINECONE_INDEX_NAME']
 PINECONE_NAMESPACE=st.secrets['PINECONE_NAMESPACE']
 
@@ -35,8 +38,21 @@ OPENAI_API_KEY=st.secrets['OPENAI_API_KEY']
 OPENAI_MODEL_NAME=st.secrets['OPENAI_MODEL_NAME']
 OPENAI_EMBEDDING_MODEL_NAME=st.secrets['OPENAI_EMBEDDING_MODEL_NAME']
 
+os.environ["LANGCHAIN_TRACING_V2"]="true"
+os.environ["LANGCHAIN_API_KEY"]='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'
+os.environ["LANGSMITH_API_KEY"]='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'
+os.environ['LANGCHAIN_ENDPOINT']="https://api.smith.langchain.com"
+os.environ['LANGSMITH_PROJECT']="sleep-research"
+
 
 client=OpenAI(api_key=OPENAI_API_KEY)
+myModel = ChatOpenAI(model=OPENAI_MODEL_NAME, temperature=0, api_key=OPENAI_API_KEY)
+
+class MyAnswer(BaseModel):
+    answer: str
+    referredFigures: str
+    willAssist: bool
+
 
 def augmented_content(inp):
     # Create the embedding using OpenAI keys
@@ -44,7 +60,6 @@ def augmented_content(inp):
     # Return the top 5 results
     embedding=client.embeddings.create(model=OPENAI_EMBEDDING_MODEL_NAME, input=inp).data[0].embedding
     pc = Pinecone(api_key=PINECONE_API_KEY)
-    #pinecone.init(api_key=PINECONE_API_KEY, environment=PINECONE_API_ENV)
     index = pc.Index(PINECONE_INDEX_NAME)
     results=index.query(vector=embedding,top_k=3,namespace=PINECONE_NAMESPACE,include_metadata=True)
     #print(f"Results: {results}")
@@ -56,13 +71,30 @@ def augmented_content(inp):
     return rr
 
 
+# SYSTEM_MESSAGE={"role": "system", 
+#                 "content": f"""Ignore all previous commands. 
+#                 You are a helpful and patient guide based in Silicon Valley. 
+#                 Please answer the questions based only on the information provided.
+#                 Else only say that you do not know. Do not try to answer the question based on your training data.
+#                 """
+#                 }
+
+# SYSTEM_MESSAGE={"role": "system", 
+#                 "content": f"""Ignore all previous commands. 
+#                 Please answer the questions based only on the information provided.
+#                 Else only say that you do not know. Do not try to answer the question based on your training data.
+#                 In addition to answering the question, return only the list of referred figures and only true or false if the figures will assist your response.
+#                 """
+#                 }
+
 SYSTEM_MESSAGE={"role": "system", 
                 "content": f"""Ignore all previous commands. 
-                You are a helpful and patient guide based in Silicon Valley. 
                 Please answer the questions based only on the information provided.
                 Else only say that you do not know. Do not try to answer the question based on your training data.
+                In addition to answering the question, return only the list of referred figures and only true or false if the figures will assist your response. Note that figure references start with word 'Figure'.
                 """
                 }
+
 
 if "messages" not in st.session_state:
     st.session_state.messages = []

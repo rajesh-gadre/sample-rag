@@ -1,2 +1,4 @@
 .streamlit/secrets.toml
 data/*
+__pycache__/*
+__pycache__/utils.cpython-311.pyc

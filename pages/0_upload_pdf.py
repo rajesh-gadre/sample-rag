@@ -40,6 +40,7 @@ PINECONE_API_KEY=st.secrets['PINECONE_API_KEY']
 #PINECONE_API_ENV=st.secrets['PINECONE_API_ENV']
 PINECONE_INDEX_NAME=st.secrets['PINECONE_INDEX_NAME']
 PINECONE_NAMESPACE=st.secrets['PINECONE_NAMESPACE']
+OPENAI_EMBEDDING_MODEL_NAME=st.secrets['OPENAI_EMBEDDING_MODEL_NAME']
 
 client=OpenAI(api_key=st.secrets['OPENAI_API_KEY'])
 
@@ -65,7 +66,7 @@ def embed(text,filename):
     docs=text_splitter.create_documents([text])
     for idx,d in enumerate(docs):
         hash=hashlib.md5(d.page_content.encode('utf-8')).hexdigest()
-        embedding=client.embeddings.create(model="text-embedding-ada-002", input=d.page_content).data[0].embedding
+        embedding=client.embeddings.create(model=OPENAI_EMBEDDING_MODEL_NAME, input=d.page_content).data[0].embedding
         metadata={"hash":hash,"text":d.page_content,"index":idx,"model":"text-embedding-ada-003","docname":filename}
         index.upsert([(hash,embedding,metadata)],namespace=PINECONE_NAMESPACE)
     return
