@@ -25,6 +25,10 @@ from langchain_core.messages import SystemMessage, HumanMessage
 from langchain_openai import ChatOpenAI
 from pydantic import BaseModel
 
+from streamlit.logger import get_logger
+
+LOGGER = get_logger(__name__)
+
 from utils import show_navigation
 show_navigation()
 
@@ -46,7 +50,7 @@ os.environ['LANGSMITH_PROJECT']="sleep-research"
 
 
 client=OpenAI(api_key=OPENAI_API_KEY)
-myModel = ChatOpenAI(model=OPENAI_MODEL_NAME, temperature=0, api_key=OPENAI_API_KEY)
+#myModel = ChatOpenAI(model=OPENAI_MODEL_NAME, temperature=0, api_key=OPENAI_API_KEY)
 
 class MyAnswer(BaseModel):
     answer: str
@@ -62,7 +66,17 @@ def augmented_content(inp):
     pc = Pinecone(api_key=PINECONE_API_KEY)
     index = pc.Index(PINECONE_INDEX_NAME)
     results=index.query(vector=embedding,top_k=3,namespace=PINECONE_NAMESPACE,include_metadata=True)
-    #print(f"Results: {results}")
+    
+    LOGGER.info(f"query: {inp}")
+    max_length_to_log = 100
+    for idx, r in enumerate(results['matches']):
+        LOGGER.info(f"{idx}: hash: {r['metadata']['hash']}")
+        if len(r['metadata']['text']) > max_length_to_log:
+            LOGGER.info(f"{idx}: text: {r['metadata']['text'][:max_length_to_log]}" + "...")    
+        else:
+            LOGGER.info(f"{idx}: hash: {r['metadata']['text']}")
+        LOGGER.info(f"{idx}: score: {r['score']}")
+
     with st.sidebar.expander("Retrieved records"):
         st.write(f"Results: {results}")
     rr=[ r['metadata']['text'] for r in results['matches']]
@@ -87,14 +101,46 @@ def augmented_content(inp):
 #                 """
 #                 }
 
+# SYSTEM_MESSAGE={"role": "system", 
+#                 "content": f"""Ignore all previous commands. 
+#                 Please answer the questions based only on the information provided.
+#                 Else only say that you do not know. Do not try to answer the question based on your training data.
+#                 In addition to answering the question, return only the list of referred figures and only true or false if the figures will assist your response. Note that figure references start with word 'Figure'.
+#                 """
+#                 }
+
+
+# system_message_content="""Ignore all previous commands.
+#                 Please answer the questions based only on the information provided.
+#                 Else only say that you do not know. Do not try to answer the question based on your training data.
+#                 In addition to answering the question,
+#                 Set referredFigures to the list of figures referred in the provided information only if they will assist understanding your answer, else set it to null. Note that figure references start with word 'Figure'.
+#                 Set willAssist to true only if the figures will assist understanding your answer, else set it to false.
+#                 """
+
+# system_message_content="""
+#         Ignore all previous commands.
+#         Please answer the questions based only on the information provided.
+#         Else only say that you do not know. Do not try to answer the question based on your training data.
+#         In addition to answering the question,
+#         Set willAssist to true only if any of the figures referred to in the provided information will help further understand your answer, else set it to false.
+#         Set referredFigures to the list of only those figures that will help further understand your answer, else set it to null. Note that figure references start with word 'Figure'.
+#         """
+
+system_message_content="""
+        Ignore all previous commands.
+        Please answer the questions based only on the information provided.
+        Else only say that you do not know. Do not try to answer the question based on your training data.
+        In addition to answering the question,
+        Set willAssist to true only if any of the figures referred to in the provided information will help further understand your answer, else set it to false.
+        Set referredFigures to the list of only those figures that will help further understand your answer, else set it to null. Note that figure references start with word 'Figure'.
+        """
+
+
 SYSTEM_MESSAGE={"role": "system", 
-                "content": f"""Ignore all previous commands. 
-                Please answer the questions based only on the information provided.
-                Else only say that you do not know. Do not try to answer the question based on your training data.
-                In addition to answering the question, return only the list of referred figures and only true or false if the figures will assist your response. Note that figure references start with word 'Figure'.
+                "content": f"""{system_message_content}
                 """
                 }
-
 
 if "messages" not in st.session_state:
     st.session_state.messages = []
@@ -107,7 +153,6 @@ for message in st.session_state.messages:
 
 if prompt := st.chat_input("What is up?"):
     retreived_content = augmented_content(prompt)
-    #print(f"Retreived content: {retreived_content}")
     prompt_guidance=f"""
 Please guide the user with the following information:
 {retreived_content}
@@ -120,20 +165,42 @@ The user's question was: {prompt}
         message_placeholder = st.empty()
         full_response = ""
         
-        messageList=[{"role": m["role"], "content": m["content"]}
-                      for m in st.session_state.messages]
-        messageList.append({"role": "user", "content": prompt_guidance})
+        # messageList=[{"role": m["role"], "content": m["content"]}
+        #               for m in st.session_state.messages]
+        # messageList.append({"role": "user", "content": prompt_guidance})
         
-        for response in client.chat.completions.create(
-            model=OPENAI_MODEL_NAME,
-            messages=messageList, stream=True):
-            delta_response=response.choices[0].delta
-            #print(f"RAG Delta response: {delta_response}")
-            if delta_response.content:
-                full_response += delta_response.content
-            message_placeholder.markdown(full_response + "▌")
+        # sm=SystemMessage(content="""
+        # Ignore all previous commands.
+        # Please answer the questions based only on the information provided.
+        # Else only say that you do not know. Do not try to answer the question based on your training data.
+        # In addition to answering the question,
+        # Set referredFigures to the list of figures referred in the provided information only if they will help user understand your answer, else set it to null. Note that figure references start with word 'Figure'.
+        # Set willAssist to true only if the figures will help user understand your answer, else set it to false.
+        # """)
+        
+        sm=SystemMessage(content=system_message_content)
+
+        hm=HumanMessage(content=prompt_guidance)
+        messages=[sm,hm]
+        myModel = ChatOpenAI(model=OPENAI_MODEL_NAME, temperature=0, api_key=OPENAI_API_KEY)
+        llm_response = myModel.with_structured_output(MyAnswer).invoke(messages)
+        full_response = llm_response.answer
+        if llm_response.willAssist:
+            full_response += f"""\n\nHere are the figures to further illustrate the answer: {llm_response.referredFigures}"""
         message_placeholder.markdown(full_response)
+
+        
+        # for response in client.chat.completions.create(
+        #     model=OPENAI_MODEL_NAME,
+        #     messages=messageList, stream=True):
+        #     delta_response=response.choices[0].delta
+        #     #print(f"RAG Delta response: {delta_response}")
+        #     if delta_response.content:
+        #         full_response += delta_response.content
+        #     message_placeholder.markdown(full_response + "▌")
+        # message_placeholder.markdown(full_response)
 
     with st.sidebar.expander("Retreival context provided to LLM"):
         st.write(f"{retreived_content}")
     st.session_state.messages.append({"role": "assistant", "content": full_response})
+    st.sidebar.write(f"messages: {st.session_state.messages}")
